@@ -283,6 +283,7 @@ def build_compose_prompt(
     voice = category.get("voice", {})
     digest = category.get("digest", [])
     offer_catalog = category.get("offer_catalog", [])
+    vocab_allowed = voice.get("vocab_allowed", [])
 
     kind = trigger.get("kind", "")
     payload = trigger.get("payload", {})
@@ -339,9 +340,10 @@ Payload         : {json.dumps(payload, ensure_ascii=False)}
 Voice tone    : {voice.get('tone','')}
 Taboo words   : {voice.get('vocab_taboo',[])}
 Peer stats    : avg_ctr={peer.get('avg_ctr','')} | avg_reviews={peer.get('avg_review_count','')} | avg_views_30d={peer.get('avg_views_30d','')} | scope={peer.get('scope','')}
+Vocab allowed : {vocab_allowed}
 Offer catalog : {[o['title'] for o in offer_catalog[:5]]}
 Seasonal      : {category.get('seasonal_beats',[])}
-Trends        : {category.get('trend_signals',[][:2])}
+Trends        : {category.get('trend_signals', [])[:2]}
 
 === MERCHANT ===
 Name          : {identity.get('name','')}
@@ -383,29 +385,22 @@ def build_reply_prompt(
     merchant: dict,
     category: dict,
     intent: str,
-    is_auto: bool,
-    merchant_id: str = "",
+    is_auto: bool = False,
+    trigger: Optional[dict] = None,
 ) -> str:
     identity = merchant.get("identity", {})
     languages = identity.get("languages", ["en"])
     lang_hint = "Hindi-English code-mix" if "hi" in languages else "English"
     slug = category.get("slug", "")
     owner = identity.get("owner_first_name", "")
+    voice = category.get("voice", {})
 
-    if is_auto:
-        return f"""The merchant sent what appears to be a WhatsApp Business auto-reply.
-Auto-reply count in this conversation: 2+.
-
-Merchant message: "{merchant_message}"
-Conversation so far: {json.dumps(conv_history[-4:], ensure_ascii=False)}
-
-Compose a polite exit message. Acknowledge gracefully, say you'll reach the owner/manager \
-directly, and end the conversation.
-
-Return JSON: {{"action": "end", "body": "<exit message>", "cta": "none", \
-"rationale": "graceful exit after auto-reply detection"}}
-
-Language: {lang_hint}. Keep it warm and brief."""
+    trigger_context = ""
+    if trigger:
+        trigger_context = (
+            f"\nOriginal trigger: kind={trigger.get('kind','')} | "
+            f"payload={json.dumps(trigger.get('payload',{}), ensure_ascii=False)}"
+        )
 
     if intent == "action":
         return f"""Merchant has given a clear action intent: "{merchant_message}"
@@ -414,7 +409,8 @@ DO NOT re-qualify. Switch to action mode immediately.
 Merchant: {identity.get('name','')} ({slug})
 Owner: {owner}
 Language: {lang_hint}
-Conversation: {json.dumps(conv_history[-4:], ensure_ascii=False)}
+Voice tone: {voice.get('tone','')}
+Conversation: {json.dumps(conv_history[-4:], ensure_ascii=False)}{trigger_context}
 
 Compose the NEXT STEP message — what you (Vera) are now doing for them, \
 or what you need to proceed. Use effort-externalization lever ("I've drafted X, confirm to proceed").
@@ -425,24 +421,14 @@ Return JSON: {{"action": "send", "body": "<message>", "cta": "open_ended", \
 "rationale": "<why this next step>"}}\
 """
 
-    if intent == "dismiss":
-        return f"""Merchant has signaled disinterest: "{merchant_message}"
-
-Compose a graceful, short exit. No sales pressure. Acknowledge and leave the door open.
-
-Language: {lang_hint}
-
-Return JSON: {{"action": "end", "body": "<exit message>", "cta": "none", \
-"rationale": "graceful exit on dismiss"}}\
-"""
-
     return f"""Merchant replied: "{merchant_message}" (intent: {intent})
 
 Merchant: {identity.get('name','')} ({slug}), language: {lang_hint}
-Conversation: {json.dumps(conv_history[-4:], ensure_ascii=False)}
+Voice tone: {voice.get('tone','')}
+Conversation: {json.dumps(conv_history[-4:], ensure_ascii=False)}{trigger_context}
 
 Continue the conversation naturally. Advance the goal from the previous message. \
-Keep the same voice and language. Use a specific fact if available.
+Keep the same voice and language. Use a specific fact from the trigger or conversation if available.
 
 Return JSON: {{"action": "send", "body": "<message>", "cta": "open_ended", \
 "rationale": "<why this reply>"}}\

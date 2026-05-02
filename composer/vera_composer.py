@@ -88,7 +88,8 @@ class VeraComposer:
         merchant: dict,
         category: dict,
         intent: str,
-        is_auto: bool,
+        is_auto: bool = False,
+        trigger: Optional[dict] = None,
     ) -> dict:
         """
         Compose a reply to a merchant (or customer) message.
@@ -100,7 +101,7 @@ class VeraComposer:
             merchant=merchant,
             category=category,
             intent=intent,
-            is_auto=is_auto,
+            trigger=trigger,
         )
 
         try:

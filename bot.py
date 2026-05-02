@@ -259,6 +259,13 @@ def reply(body: ReplyBody) -> dict:
     category_slug = merchant.get("category_slug", "")
     category = _store.get("category", category_slug) or {}
 
+    # Recover trigger context from conv_id if available (conv_id = conv_{mid}_{trigger_id})
+    trigger: Optional[dict] = None
+    parts = conv_id.split("_")
+    if len(parts) >= 3:
+        trigger_id = "_".join(parts[2:])
+        trigger = _store.get("trigger", trigger_id)
+
     # Process the inbound message
     signal = _conv_manager.process_merchant_reply(
         conv_id=conv_id,
@@ -299,7 +306,7 @@ def reply(body: ReplyBody) -> dict:
         merchant=merchant,
         category=category,
         intent=intent_str,
-        is_auto=False,
+        trigger=trigger,
     )
 
     action = reply_result.get("action", "send")
