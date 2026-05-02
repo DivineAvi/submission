@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Virtualenv
+.venv/
+venv/
+env/
+
+# Env / secrets
+.env
+.env.*
+*.key
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Challenge dataset (not part of submission)
+magicpin-ai-challenge/
+
+# Claude Code
+.claude/
