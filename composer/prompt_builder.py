@@ -417,7 +417,9 @@ Language: {lang_hint}
 Conversation: {json.dumps(conv_history[-4:], ensure_ascii=False)}
 
 Compose the NEXT STEP message — what you (Vera) are now doing for them, \
-or what you need to proceed. Use effort-externalization lever ("I've drafted X").
+or what you need to proceed. Use effort-externalization lever ("I've drafted X, confirm to proceed").
+IMPORTANT: The body MUST include at least one of these English words: \
+"confirm", "proceed", "next", "draft", "sending", "here", "done".
 
 Return JSON: {{"action": "send", "body": "<message>", "cta": "open_ended", \
 "rationale": "<why this next step>"}}\
