@@ -43,7 +43,7 @@ class ContextStore:
         key = (scope, context_id)
         with self._lock:
             existing = self._store.get(key)
-            if existing and existing.version >= version:
+            if existing and existing.version > version:
                 return False, existing.version
             self._store[key] = ContextEntry(
                 scope=scope,
