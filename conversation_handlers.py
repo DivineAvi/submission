@@ -68,6 +68,8 @@ def respond(state: ConversationState, merchant_message: str) -> dict:
     # Record this turn
     state.turns.append({"from": "merchant", "body": merchant_message})
 
+    from_role = "merchant"  # standalone handler is always merchant-facing
+
     # Auto-reply detection
     if is_auto_reply(merchant_message, prior_merchant_messages):
         state.auto_reply_count += 1
@@ -80,6 +82,7 @@ def respond(state: ConversationState, merchant_message: str) -> dict:
                 category=state.category,
                 intent="dismiss",
                 is_auto=True,
+                from_role=from_role,
             )
             return {"action": "end", "rationale": result.get("rationale", "Auto-reply detected — graceful exit")}
 
@@ -91,6 +94,7 @@ def respond(state: ConversationState, merchant_message: str) -> dict:
             category=state.category,
             intent="auto_reply_probe",
             is_auto=False,
+            from_role=from_role,
         )
         body = result.get("body", "")
         if body:
@@ -117,6 +121,7 @@ def respond(state: ConversationState, merchant_message: str) -> dict:
             category=state.category,
             intent="dismiss",
             is_auto=False,
+            from_role=from_role,
         )
         return {"action": "end", "rationale": result.get("rationale", "Graceful exit on dismiss")}
 
@@ -128,6 +133,7 @@ def respond(state: ConversationState, merchant_message: str) -> dict:
         category=state.category,
         intent=intent.value,
         is_auto=False,
+        from_role=from_role,
     )
 
     action = result.get("action", "send")

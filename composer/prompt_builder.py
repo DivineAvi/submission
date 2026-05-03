@@ -48,15 +48,18 @@ MANDATORY RULES:
 10. Anti-repetition: if the conversation history contains a similar message already sent, \
     take a clearly different angle.
 
-COMPULSION LEVERS (use 1–2 per message):
+COMPULSION LEVERS — pick 1–2 and apply them with the SPECIFIC numbers from context:
 - Specificity       "2,100-patient trial, 38% lower caries recurrence — JIDA Oct 2026 p.14"
-- Loss aversion     "6,777 missed searches in your locality last month"
-- Social proof      "3 dentists in Lajpat Nagar ran this recall this month"
-- Effort extern.    "I've drafted the post — just say go"
-- Curiosity         "Want to see who asked?"
-- Reciprocity       "Noticed this in your data, thought you'd want to know"
-- Asking merchant   "What's your most-asked service this week?"
-- Binary commit     "Reply YES to activate / STOP to skip"\
+- Loss aversion     "6,777 missed searches in your locality last month" / "every day without this = X missed calls"
+- Social proof      "3 dentists in Lajpat Nagar did this last month" / "top-performing salons in Pune already running this"
+- Effort extern.    "I've already drafted it — say go and it's sent" / "took me 2 min — want to see?"
+- Curiosity gap     "Want to see exactly who searched and didn't find you?" / "Shall I show you the list?"
+- Reciprocity       "Spotted this in your data, wanted to flag it"
+- Binary commit     "Reply YES to activate / STOP to skip"
+
+ENGAGEMENT RULE: The last sentence must be a SPECIFIC ask — not "let me know if you need help."
+For binary triggers: end with "Reply YES to [exact action] / STOP to skip."
+For open triggers: end with a question containing a specific number or fact from context.\
 """
 
 
@@ -71,9 +74,11 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
         "research_digest": (
             f"Lead with the digest landing. Cite the specific finding: trial size, "
             f"percentage, source name+page. Tie to the merchant's patient/customer cohort. "
-            f"Offer to pull the abstract or draft a patient-ed WhatsApp they can share.\n"
+            f"Offer a SPECIFIC next step — either: (a) pull the abstract, or (b) draft a patient-ed "
+            f"WhatsApp they can forward to their patients right now. "
+            f"End with: 'Want me to draft it?' or similar low-friction ask."
             + (
-                f"Top item: \"{top_item['title']}\" — {top_item.get('source','')} — "
+                f"\nTop item: \"{top_item['title']}\" — {top_item.get('source','')} — "
                 f"trial_n={top_item.get('trial_n','')} — "
                 f"patient_segment={top_item.get('patient_segment','')}"
                 if top_item else ""
@@ -81,9 +86,11 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
         ),
         "regulation_change": (
             f"Lead with the deadline ({p.get('deadline_iso','soon')}). "
-            f"State exactly what changes. Frame as a peer heads-up, not alarm. "
-            f"Suggest the specific audit action needed."
-            + (f"\nDigest item: {top_item}" if top_item else "")
+            f"State exactly what changes (old value → new value if in payload). "
+            f"Frame as a peer heads-up, not alarm. Suggest the specific audit action needed. "
+            f"End with: 'Kya aapko is audit mein madad chahiye?' or 'Want me to draft the compliance checklist?' "
+            f"(match language to merchant preference)."
+            + (f"\nDigest item: {json.dumps(top_item, ensure_ascii=False)}" if top_item else "")
         ),
         "recall_due": (
             f"Customer-facing recall message (send_as = merchant_on_behalf). "
@@ -95,7 +102,9 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
             f"Name the exact metric that dipped: {p.get('metric','?')} "
             f"dropped {abs(p.get('delta_pct', 0))*100:.0f}% vs {p.get('window','?')} baseline "
             f"(baseline={p.get('vs_baseline','?')}). "
-            f"Frame with loss aversion. Offer ONE concrete reversible action."
+            f"Frame with loss aversion — translate the drop into missed calls/patients/revenue. "
+            f"Offer ONE concrete reversible action (e.g., post a new offer, add a photo, run a recall). "
+            f"End: 'Reply YES to [specific action] / STOP to skip.'"
         ),
         "perf_spike": (
             f"Celebrate the specific number: {p.get('metric','?')} up "
@@ -111,8 +120,10 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
         ),
         "renewal_due": (
             f"Days remaining: {p.get('days_remaining','?')}. Plan: {p.get('plan','')} @ ₹{p.get('renewal_amount','')}. "
-            f"Frame around VALUE already created (views, calls, leads in the period) — "
-            f"not around 'your subscription expires'. Binary CTA: YES to renew / STOP to discuss."
+            f"Frame around VALUE already created — pull the merchant's actual views/calls/leads numbers "
+            f"and say: 'These came from your profile. You keep all of this with renewal.' "
+            f"Loss aversion: 'Profile goes dark in {p.get('days_remaining','?')} days — searches stop.' "
+            f"End: 'Reply YES to renew ₹{p.get('renewal_amount','')} / STOP to discuss options.'"
         ),
         "festival_upcoming": (
             f"Festival: {p.get('festival','')} in {p.get('days_until','?')} days "
@@ -122,7 +133,9 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
         "curious_ask_due": (
             f"Ask ONE short, specific question about the merchant's business this week. "
             f"Ask template hint: {p.get('ask_template','')}. "
-            f"No preamble, no explanation. Make it trivially easy to reply in one word."
+            f"No long preamble, but the question must be a complete sentence (at least 25 characters). "
+            f"Hook in the first few words so it feels relevant, not generic. "
+            f"Easy to reply in 1-3 words. End with a '?'."
         ),
         "review_theme_emerged": (
             f"Theme: \"{p.get('theme','')}\" appeared {p.get('occurrences_30d',0)}× in last 30 days "
@@ -134,8 +147,10 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
             f"Expired {p.get('days_since_expiry',0)} days ago. "
             f"Lapsed customers added since expiry: {p.get('lapsed_customers_added_since_expiry',0)}. "
             f"Perf dip post-expiry: {abs(p.get('perf_dip_pct',0))*100:.0f}%. "
-            f"Loss aversion frame: every day without profile = missed searches. "
-            f"Binary CTA: YES to reactivate / STOP to skip."
+            f"Loss aversion: 'Since expiry, {p.get('lapsed_customers_added_since_expiry',0)} customers "
+            f"came in and left — none of them will find you again until you're back.' "
+            f"Translate the dip % into estimated missed searches/month. "
+            f"End: 'Reply YES to reactivate today / STOP to pass.'"
         ),
         "competitor_opened": (
             f"Competitor: \"{p.get('competitor_name','')}\" opened {p.get('distance_km',0):.1f}km away "
@@ -147,7 +162,8 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
             f"Merchant has been silent for {p.get('days_since_last_merchant_message',0)} days. "
             f"Last topic: {p.get('last_topic','')}. "
             f"Re-engage with genuine curiosity — ask about something real in their business. "
-            f"Do NOT re-introduce yourself. One short question."
+            f"Do NOT re-introduce yourself. Write a complete sentence of at least 30 characters. "
+            f"Reference the last topic or a concrete business signal to make it feel relevant."
         ),
         "active_planning_intent": (
             f"Merchant last said: \"{p.get('merchant_last_message','')}\" — "
@@ -216,7 +232,8 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
             f"CDE webinar/event: digest item {p.get('digest_item_id','')}. "
             f"Credits: {p.get('credits',0)}. Fee: {p.get('fee','')}. "
             f"Frame as a professional development nudge for the practitioner. "
-            f"Keep it short — date, credits, cost, single question."
+            f"Include: event name/topic (from digest), date, credits earned, cost. "
+            f"End with a single yes/no question. Body must be at least 40 characters."
         ),
         "milestone_imminent": (
             f"About to hit a milestone. Frame as one-last-push curiosity."
@@ -387,6 +404,7 @@ def build_reply_prompt(
     intent: str,
     is_auto: bool = False,
     trigger: Optional[dict] = None,
+    from_role: str = "merchant",
 ) -> str:
     identity = merchant.get("identity", {})
     languages = identity.get("languages", ["en"])
@@ -394,14 +412,62 @@ def build_reply_prompt(
     slug = category.get("slug", "")
     owner = identity.get("owner_first_name", "")
     voice = category.get("voice", {})
+    trigger_kind = trigger.get("kind", "") if trigger else ""
+    trigger_payload = trigger.get("payload", {}) if trigger else {}
 
     trigger_context = ""
     if trigger:
         trigger_context = (
-            f"\nOriginal trigger: kind={trigger.get('kind','')} | "
-            f"payload={json.dumps(trigger.get('payload',{}), ensure_ascii=False)}"
+            f"\nOriginal trigger: kind={trigger_kind} | "
+            f"payload={json.dumps(trigger_payload, ensure_ascii=False)}"
         )
 
+    # ---------------------------------------------------------------
+    # Customer replies: the bot is speaking ON BEHALF of the merchant
+    # to the merchant's customer. Completing actions directly is correct.
+    # ---------------------------------------------------------------
+    if from_role == "customer":
+        if intent == "action":
+            # Customer confirmed a slot / booking — complete it, no further confirmation needed
+            slots = trigger_payload.get("available_slots", [])
+            slot_labels = [s.get("label", "") for s in slots] if slots else []
+            return f"""A CUSTOMER of {identity.get('name','')} just confirmed: "{merchant_message}"
+
+This message is sent FROM the merchant TO their customer (send_as = merchant_on_behalf).
+The customer has already confirmed. DO NOT ask for another confirmation.
+
+Context:
+- Merchant: {identity.get('name','')} ({slug})
+- Language: {lang_hint}{trigger_context}
+- Available slots: {slot_labels}
+- Conversation so far: {json.dumps(conv_history[-4:], ensure_ascii=False)}
+
+Write a DIRECT booking/appointment confirmation to the customer:
+1. Confirm exactly what was booked (date, time, service)
+2. Add one helpful detail (address hint, what to bring, or reminder note)
+3. Close warmly — no further CTA needed
+
+Return JSON: {{"action": "send", "body": "<confirmation to customer>", "cta": "none", \
+"rationale": "<why this confirms directly>"}}\
+"""
+        # Non-action customer message (question, general reply)
+        return f"""Customer of {identity.get('name','')} replied: "{merchant_message}" (intent: {intent})
+
+This is a customer-facing message (merchant_on_behalf). Language: {lang_hint}
+{trigger_context}
+Conversation: {json.dumps(conv_history[-4:], ensure_ascii=False)}
+
+Respond helpfully and warmly as the merchant's representative.
+Answer the customer's question or acknowledge their message.
+If they've expressed a preference, honour it and move toward a next step.
+
+Return JSON: {{"action": "send", "body": "<reply to customer>", "cta": "open_ended", \
+"rationale": "<why>"}}\
+"""
+
+    # ---------------------------------------------------------------
+    # Merchant replies
+    # ---------------------------------------------------------------
     if intent == "action":
         return f"""Merchant has given a clear action intent: "{merchant_message}"
 DO NOT re-qualify. Switch to action mode immediately.
@@ -412,24 +478,32 @@ Language: {lang_hint}
 Voice tone: {voice.get('tone','')}
 Conversation: {json.dumps(conv_history[-4:], ensure_ascii=False)}{trigger_context}
 
-Compose the NEXT STEP message — what you (Vera) are now doing for them, \
-or what you need to proceed. Use effort-externalization lever ("I've drafted X, confirm to proceed").
-IMPORTANT: The body MUST include at least one of these English words: \
-"confirm", "proceed", "next", "draft", "sending", "here", "done".
+PERFORM the requested next step right now:
+- If they asked for a draft / audit / plan: say "Done — here it is:" and include the actual draft
+- If they asked to book / schedule: confirm the booking details directly
+- If they asked for information: provide it specifically, not vaguely
+Use effort-externalization only if you genuinely need ONE more piece of info to complete.
+Avoid: "I'll draft it", "I can help with that", "Would you like me to…"
+IMPORTANT: Body MUST include at least one of: "confirmed", "done", "here", "sending", "drafted", "scheduled", "booked".
 
 Return JSON: {{"action": "send", "body": "<message>", "cta": "open_ended", \
-"rationale": "<why this next step>"}}\
+"rationale": "<what specific action was performed>"}}\
 """
 
     return f"""Merchant replied: "{merchant_message}" (intent: {intent})
 
-Merchant: {identity.get('name','')} ({slug}), language: {lang_hint}
+Merchant: {identity.get('name','')} ({slug})
+Owner: {owner}
+Language: {lang_hint}
 Voice tone: {voice.get('tone','')}
 Conversation: {json.dumps(conv_history[-4:], ensure_ascii=False)}{trigger_context}
 
-Continue the conversation naturally. Advance the goal from the previous message. \
-Keep the same voice and language. Use a specific fact from the trigger or conversation if available.
+Advance toward a concrete outcome — do NOT just acknowledge.
+- If the merchant expressed a need ("need help with X", "want to try Y"): offer the specific next step immediately
+- If they shared information: use it to propose a clear action
+- Use ONE specific fact from the trigger or conversation
+- End with a single low-friction ask that moves them forward
 
 Return JSON: {{"action": "send", "body": "<message>", "cta": "open_ended", \
-"rationale": "<why this reply>"}}\
+"rationale": "<what goal this advances>"}}\
 """

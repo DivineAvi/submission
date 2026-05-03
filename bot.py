@@ -211,6 +211,7 @@ def tick(body: TickBody) -> dict:
             continue
 
         conv_id = f"conv_{merchant_id}_{trigger_id}"
+        _conv_manager.get_or_create(conv_id, merchant_id, customer_id, trigger_id)
         _conv_manager.record_vera_send(conv_id, result.body)
         _fired.add(fire_key)
 
@@ -307,6 +308,7 @@ def reply(body: ReplyBody) -> dict:
         category=category,
         intent=intent_str,
         trigger=trigger,
+        from_role=body.from_role,
     )
 
     action = reply_result.get("action", "send")

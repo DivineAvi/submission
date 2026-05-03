@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 _DEFAULT_MODEL = "gpt-4o"
 _REPLY_MODEL = "gpt-4o-mini"
 _MAX_TOKENS_COMPOSE = 1024
-_MAX_TOKENS_REPLY = 512
+_MAX_TOKENS_REPLY = 768
 
 
 class VeraComposer:
@@ -90,6 +90,7 @@ class VeraComposer:
         intent: str,
         is_auto: bool = False,
         trigger: Optional[dict] = None,
+        from_role: str = "merchant",
     ) -> dict:
         """
         Compose a reply to a merchant (or customer) message.
@@ -102,6 +103,7 @@ class VeraComposer:
             category=category,
             intent=intent,
             trigger=trigger,
+            from_role=from_role,
         )
 
         try:

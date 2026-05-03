@@ -19,6 +19,14 @@ _ACTION = [
     "karo", "kar do", "send karo", "acha", "thik hai", "sounds good",
     "great", "perfect", "absolutely", "of course", "definitely",
     "chalega", "chalte hain", "bata do",
+    # explicit help/need requests
+    "need help", "help me", "can you help", "please help", "i need",
+    "help kar", "madad karo", "madad chahiye",
+    # booking / scheduling signals
+    "book me", "book it", "book for", "please book", "schedule me",
+    "confirm it", "confirm the", "let's book", "fix it",
+    "i'd like to", "id like to", "i want to", "i would like",
+    "sign me up", "count me in",
 ]
 
 _DISMISS = [
