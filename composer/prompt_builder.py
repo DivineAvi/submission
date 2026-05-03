@@ -108,15 +108,24 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
         ),
         "perf_spike": (
             f"Celebrate the specific number: {p.get('metric','?')} up "
-            f"{p.get('delta_pct',0)*100:.0f}% in {p.get('window','?')}. "
-            f"Link to likely driver: {p.get('likely_driver','')}. "
-            f"Suggest capitalising — draft a post, run an offer, or convert interest."
+            f"{p.get('delta_pct',0)*100:.0f}% in {p.get('window','?')} "
+            f"(baseline={p.get('vs_baseline','?')}). "
+            f"Link to the likely driver: {p.get('likely_driver','')}. "
+            f"Offer to capitalise right now — draft a post, activate an offer, or run a follow-up. "
+            f"End: 'Reply YES to draft the [post/offer] / STOP to skip.'"
         ),
         "milestone_reached": (
-            f"The milestone: {p.get('metric','?')} reaching {p.get('milestone_value','?')} "
-            f"(current: {p.get('value_now','?')}). "
-            f"{'Imminent — frame as almost-there for one last push.' if p.get('is_imminent') else 'Already hit — celebrate and suggest next milestone.'} "
-            f"Social proof lever works well here."
+            f"The milestone: {p.get('metric','?')} — currently at {p.get('value_now','?')}, "
+            f"target {p.get('milestone_value','?')}. "
+            + (
+                f"IMMINENT — almost at {p.get('milestone_value','?')}. "
+                f"Frame as 'one small push left.' Social proof: 'Top merchants at this level get more calls.' "
+                f"End: 'Reply YES to push for {p.get('milestone_value','?')} / STOP to skip.'"
+                if p.get('is_imminent')
+                else
+                f"Already hit — celebrate with a specific impact statement. Suggest the next milestone. "
+                f"End: 'Reply YES to announce this / STOP to skip.'"
+            )
         ),
         "renewal_due": (
             f"Days remaining: {p.get('days_remaining','?')}. Plan: {p.get('plan','')} @ ₹{p.get('renewal_amount','')}. "
@@ -198,8 +207,10 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
         "ipl_match_today": (
             f"Match today: {p.get('match','')} at {p.get('venue','')} — "
             f"starts {p.get('match_time_iso','')}. "
-            f"Real-time hook for food/restaurant. Specific watch-party offer or match-night combo. "
-            f"Time-sensitive — message must go before the match starts."
+            f"Real-time hook for food/restaurant. Offer a specific match-night combo or watch-party deal "
+            f"(service+price from catalog, not generic '% off'). Time pressure is the main lever — "
+            f"'match starts in X hours.' "
+            f"End: 'Reply YES to activate the match-night offer / STOP to pass.'"
         ),
         "wedding_package_followup": (
             f"Wedding date: {p.get('wedding_date','')} — "
@@ -224,9 +235,10 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
         ),
         "seasonal_perf_dip": (
             f"Metric {p.get('metric','')} dipped {abs(p.get('delta_pct',0))*100:.0f}% in {p.get('window','')}. "
-            + (f"This is an EXPECTED seasonal dip ({p.get('season_note','')}) — acknowledge it, don't alarm. "
-               if p.get('is_expected_seasonal') else "")
-            + f"Suggest one action to soften the dip."
+            + (f"EXPECTED seasonal dip ({p.get('season_note','')}) — acknowledge it, don't alarm. "
+               if p.get('is_expected_seasonal') else "UNEXPECTED dip — frame with light urgency. ")
+            + f"Suggest ONE concrete action to soften the dip (post, offer, or recall). "
+            + f"End: 'Reply YES to activate [specific action] / STOP to skip.'"
         ),
         "cde_opportunity": (
             f"CDE webinar/event: digest item {p.get('digest_item_id','')}. "
@@ -236,7 +248,9 @@ def _trigger_guidance(kind: str, payload: dict, top_item: Optional[dict]) -> str
             f"End with a single yes/no question. Body must be at least 40 characters."
         ),
         "milestone_imminent": (
-            f"About to hit a milestone. Frame as one-last-push curiosity."
+            f"About to hit a milestone. Frame as 'almost there — one small action to push over the line.' "
+            f"Social proof: 'Merchants at this level see X% more calls.' "
+            f"End: 'Reply YES to make the push / STOP to skip.'"
         ),
     }
 
@@ -256,6 +270,9 @@ _BINARY_CTA_KINDS = {
     "review_theme_emerged", "festival_upcoming", "competitor_opened",
     "supply_alert", "chronic_refill_due", "customer_lapsed_hard",
     "gbp_unverified", "trial_followup",
+    # also binary — opportunity/momentum triggers where YES captures the moment
+    "perf_spike", "milestone_reached", "milestone_imminent",
+    "ipl_match_today", "seasonal_perf_dip",
 }
 _NO_CTA_KINDS = {
     "research_digest", "regulation_change", "category_seasonal", "cde_opportunity",
@@ -380,10 +397,14 @@ Conv history  : {history_text}
 === TRIGGER-KIND GUIDANCE ===
 {_trigger_guidance(kind, payload, top_item)}
 
-=== COMPOSITION CHECKLIST ===
+=== COMPOSITION CHECKLIST (all items mandatory) ===
 • Language: {lang_hint}
 • CTA style: {_cta_hint(kind)}
-• Merchant name to use: {"Dr. " + owner if category.get('slug') == 'dentists' else owner or identity.get('name','')}
+• Merchant name: {"Dr. " + owner if category.get('slug') == 'dentists' else owner or identity.get('name','')}
+• WHY NOW — first sentence must state the specific trigger event (kind={kind}) and why it matters today
+• Merchant number — reference at least ONE specific number from merchant data:
+    CTR={perf.get('ctr','')} vs peer median={peer.get('avg_ctr','')} | views={perf.get('views','')} | calls={perf.get('calls','')} | signals={signals[:2]}
+• Category voice — use vocabulary and register appropriate for {category.get('slug','')}, tone={voice.get('tone','')}; prefer terms from: {vocab_allowed[:4]}
 • DO NOT repeat any body already in conv history
 • Suppression key to embed: {suppression_key}
 

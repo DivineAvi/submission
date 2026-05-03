@@ -60,6 +60,7 @@ class VeraComposer:
                     model=self._model,
                     max_tokens=_MAX_TOKENS_COMPOSE,
                     temperature=0,
+                    timeout=25,
                     messages=[
                         {"role": "system", "content": SYSTEM_PROMPT},
                         {"role": "user", "content": prompt},

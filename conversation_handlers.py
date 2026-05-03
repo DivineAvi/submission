@@ -82,6 +82,7 @@ def respond(state: ConversationState, merchant_message: str) -> dict:
                 category=state.category,
                 intent="dismiss",
                 is_auto=True,
+                trigger=state.trigger,
                 from_role=from_role,
             )
             return {"action": "end", "rationale": result.get("rationale", "Auto-reply detected — graceful exit")}
@@ -94,6 +95,7 @@ def respond(state: ConversationState, merchant_message: str) -> dict:
             category=state.category,
             intent="auto_reply_probe",
             is_auto=False,
+            trigger=state.trigger,
             from_role=from_role,
         )
         body = result.get("body", "")
@@ -121,6 +123,7 @@ def respond(state: ConversationState, merchant_message: str) -> dict:
             category=state.category,
             intent="dismiss",
             is_auto=False,
+            trigger=state.trigger,
             from_role=from_role,
         )
         return {"action": "end", "rationale": result.get("rationale", "Graceful exit on dismiss")}
@@ -133,6 +136,7 @@ def respond(state: ConversationState, merchant_message: str) -> dict:
         category=state.category,
         intent=intent.value,
         is_auto=False,
+        trigger=state.trigger,
         from_role=from_role,
     )
 
