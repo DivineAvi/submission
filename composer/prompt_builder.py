@@ -63,6 +63,29 @@ For open triggers: end with a question containing a specific number or fact from
 """
 
 
+REPLY_SYSTEM_PROMPT = """\
+You are Vera, magicpin's AI assistant, in an active WhatsApp conversation with a merchant or customer.
+
+OUTPUT FORMAT — respond with ONLY this JSON object, no markdown fencing, no preamble:
+{
+  "action": "send",
+  "body": "<reply text>",
+  "cta": "open_ended" | "binary_yes_stop" | "none",
+  "rationale": "<1 sentence: what this reply achieves>"
+}
+
+CRITICAL RULES:
+1. action MUST be "send" — return "end" ONLY if the merchant explicitly says stop/spam/not interested.
+   Return "wait" ONLY if the merchant explicitly asks you to check back later.
+2. When switching to ACTION mode: begin the body with a DOING word:
+   "Done —", "Here —", "Sending —", "Confirmed —", "Drafted —", "Booked —", "Here's what's next:"
+3. No re-introduction ("Hi, I'm Vera…"). No meta-commentary ("I understand you want to…").
+4. Advance the conversation — every reply moves toward a concrete outcome.
+5. Match voice and language to the category and merchant preference.
+6. Never fabricate facts not present in the conversation or trigger context.\
+"""
+
+
 # ---------------------------------------------------------------------------
 # Trigger-kind guidance fragments
 # ---------------------------------------------------------------------------
@@ -490,22 +513,25 @@ Return JSON: {{"action": "send", "body": "<reply to customer>", "cta": "open_end
     # Merchant replies
     # ---------------------------------------------------------------
     if intent == "action":
-        return f"""Merchant has given a clear action intent: "{merchant_message}"
-DO NOT re-qualify. Switch to action mode immediately.
+        has_history = bool(conv_history)
+        return f"""Merchant confirmed they want to proceed: "{merchant_message}"
+ACTION MODE — do NOT re-qualify, do NOT ask if they're sure.
 
 Merchant: {identity.get('name','')} ({slug})
 Owner: {owner}
 Language: {lang_hint}
 Voice tone: {voice.get('tone','')}
-Conversation: {json.dumps(conv_history[-4:], ensure_ascii=False)}{trigger_context}
+Conversation so far: {json.dumps(conv_history[-4:], ensure_ascii=False)}{trigger_context}
 
-PERFORM the requested next step right now:
-- If they asked for a draft / audit / plan: say "Done — here it is:" and include the actual draft
-- If they asked to book / schedule: confirm the booking details directly
-- If they asked for information: provide it specifically, not vaguely
-Use effort-externalization only if you genuinely need ONE more piece of info to complete.
-Avoid: "I'll draft it", "I can help with that", "Would you like me to…"
-IMPORTANT: Body MUST include at least one of: "confirmed", "done", "here", "sending", "drafted", "scheduled", "booked".
+{"PERFORM the specific next step that was established in the conversation above." if has_history else \
+"No prior task established — acknowledge the intent and name the FIRST concrete thing Vera will do. " \
+"Example: 'Here's what we'll tackle first — [specific action from Vera's toolkit: profile update / " \
+"offer draft / post draft / recall list]. Which one do you want to start with?'"}
+
+Rules:
+- Start the body with a DOING word: "Done —", "Here —", "Confirmed —", "Drafted —", "Here's what's next:"
+- action MUST be "send" — NEVER "end" or "wait" for an action intent
+- Include at least one of: confirmed / done / here / sending / drafted / scheduled / booked / next
 
 Return JSON: {{"action": "send", "body": "<message>", "cta": "open_ended", \
 "rationale": "<what specific action was performed>"}}\

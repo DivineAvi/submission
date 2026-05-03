@@ -12,7 +12,7 @@ from typing import Optional
 from openai import OpenAI, APIError
 
 from .output_validator import ComposedMessage, parse_and_validate, parse_reply_action
-from .prompt_builder import SYSTEM_PROMPT, build_compose_prompt, build_reply_prompt
+from .prompt_builder import SYSTEM_PROMPT, REPLY_SYSTEM_PROMPT, build_compose_prompt, build_reply_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +114,7 @@ class VeraComposer:
                 temperature=0,
                 timeout=12,
                 messages=[
-                    {"role": "system", "content": SYSTEM_PROMPT},
+                    {"role": "system", "content": REPLY_SYSTEM_PROMPT},
                     {"role": "user", "content": prompt},
                 ],
             )
